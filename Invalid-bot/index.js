@@ -383,6 +383,17 @@ client.on("interactionCreate", async (interaction) => {
       }
     }
 
+    // Remove the "👼 • Angel" role if they have it
+    const angelRole = interaction.guild.roles.cache.find(
+      (role) => role.name === "👼 • Angel",
+    );
+    if (angelRole) {
+      const member = interaction.guild.members.cache.get(interaction.user.id);
+      if (member) {
+        await member.roles.remove(angelRole).catch(console.error);
+      }
+    }
+
     // Assign the "❌• Unverified" role
     const unverifiedRole = interaction.guild.roles.cache.find(
       (role) => role.name === "❌• Unverified",
@@ -490,6 +501,19 @@ client.on("interactionCreate", async (interaction) => {
       }
     }
 
+    // Assign the "👼 • Angel" role if the guild is "Heavenly Spirits"
+    if (guildName === "Heavenly Spirits") {
+      const angelRole = interaction.guild.roles.cache.find(
+        (role) => role.name === "👼 • Angel",
+      );
+      if (angelRole) {
+        const member = interaction.guild.members.cache.get(interaction.user.id);
+        if (member) {
+          await member.roles.add(angelRole).catch(console.error);
+        }
+      }
+    }
+
     // Remove the "❌• Unverified" role (if present)
     const unverifiedRole = interaction.guild.roles.cache.find(
       (role) => role.name === "❌• Unverified",
@@ -528,8 +552,4 @@ const app = express();
 
 app.listen(3000, () => {
   console.log("Project is running!");
-});
-
-app.get("/", (req, res) => {
-  res.send("Hello world!");
 });
