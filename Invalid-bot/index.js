@@ -14,6 +14,8 @@ import {
 import axios from "axios";
 import { createCanvas, loadImage, registerFont } from "canvas";
 import express from "express";
+import fs from "fs";
+import path from "path";
 
 // Load environment variables
 dotenv.config();
@@ -32,9 +34,27 @@ const client = new Client({
   ],
 });
 
-// Store verification status and cooldowns in memory
-const verifiedUsers = new Set();
-const cooldowns = new Map(); // Stores cooldown timestamps for users
+// Persistent storage for verified users and cooldowns
+const storagePath = path.resolve("./verifiedUsers.json");
+
+// Load verified users and cooldowns from file
+let verifiedUsers = new Set();
+let cooldowns = new Map();
+
+if (fs.existsSync(storagePath)) {
+  const data = JSON.parse(fs.readFileSync(storagePath, "utf-8"));
+  verifiedUsers = new Set(data.verifiedUsers || []);
+  cooldowns = new Map(data.cooldowns || []);
+}
+
+// Function to save verified users and cooldowns to file
+function saveStorage() {
+  const data = {
+    verifiedUsers: Array.from(verifiedUsers),
+    cooldowns: Array.from(cooldowns),
+  };
+  fs.writeFileSync(storagePath, JSON.stringify(data, null, 2));
+}
 
 // Register Minecraft font
 registerFont("./Minecraft.ttf", { family: "Minecraft" }); // Ensure "Minecraft.ttf" is in the same directory
@@ -371,6 +391,8 @@ client.on("interactionCreate", async (interaction) => {
   } else if (interaction.customId === "unverify_button") {
     // Handle unverify button click
     verifiedUsers.delete(interaction.user.id);
+    cooldowns.delete(interaction.user.id);
+    saveStorage(); // Save changes to storage
 
     // Remove the "✅• Verified" role
     const verifiedRole = interaction.guild.roles.cache.find(
@@ -527,6 +549,7 @@ client.on("interactionCreate", async (interaction) => {
 
     // Mark the user as verified
     verifiedUsers.add(interaction.user.id);
+    saveStorage(); // Save changes to storage
 
     // Set a 6-hour cooldown for unverifying (only for non-admins)
     const isAdmin = interaction.member.permissions.has(
@@ -534,6 +557,7 @@ client.on("interactionCreate", async (interaction) => {
     );
     if (!isAdmin) {
       cooldowns.set(interaction.user.id, Date.now() + 6 * 60 * 60 * 1000);
+      saveStorage(); // Save changes to storage
     }
 
     // Send success message only to the user
