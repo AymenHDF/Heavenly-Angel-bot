@@ -37,17 +37,31 @@ const client = new Client({
 // Persistent storage for verified users and cooldowns
 const storagePath = path.resolve("./verifiedUsers.json");
 
-// Load verified users and cooldowns from file
+// Initialize verified users and cooldowns
 let verifiedUsers = new Set();
 let cooldowns = new Map();
 
-if (fs.existsSync(storagePath)) {
-  const data = JSON.parse(fs.readFileSync(storagePath, "utf-8"));
-  verifiedUsers = new Set(data.verifiedUsers || []);
-  cooldowns = new Map(data.cooldowns || []);
+// Function to load data from the JSON file
+function loadStorage() {
+  try {
+    if (fs.existsSync(storagePath)) {
+      const data = JSON.parse(fs.readFileSync(storagePath, "utf-8"));
+      verifiedUsers = new Set(data.verifiedUsers || []);
+      cooldowns = new Map(data.cooldowns || []);
+    } else {
+      // Create the file if it doesn't exist
+      fs.writeFileSync(storagePath, JSON.stringify({ verifiedUsers: [], cooldowns: [] }, null, 2));
+    }
+  } catch (error) {
+    console.error("Failed to load storage:", error);
+    // Reset storage if the file is corrupted
+    verifiedUsers = new Set();
+    cooldowns = new Map();
+    fs.writeFileSync(storagePath, JSON.stringify({ verifiedUsers: [], cooldowns: [] }, null, 2));
+  }
 }
 
-// Function to save verified users and cooldowns to file
+// Function to save data to the JSON file
 function saveStorage() {
   const data = {
     verifiedUsers: Array.from(verifiedUsers),
@@ -55,6 +69,9 @@ function saveStorage() {
   };
   fs.writeFileSync(storagePath, JSON.stringify(data, null, 2));
 }
+
+// Load storage when the bot starts
+loadStorage();
 
 // Register Minecraft font
 registerFont("./Minecraft.ttf", { family: "Minecraft" }); // Ensure "Minecraft.ttf" is in the same directory
