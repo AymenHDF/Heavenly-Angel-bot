@@ -270,25 +270,42 @@ client.once("ready", () => {
 client.on("messageCreate", async (message) => {
   if (message.content === "!verifybutton" && message.channel.name === "『✅』verify") {
     try {
-      // Get the user's roles
-      const member = message.guild.members.cache.get(message.author.id);
-      if (!member) return;
-
-      // Check if the user has the "✅• Verified" or "❌• Unverified" role
-      const isVerified = member.roles.cache.some(
-        (role) => role.name === "✅• Verified",
-      );
-      const isUnverified = member.roles.cache.some(
-        (role) => role.name === "❌• Unverified",
+      // Check if the user has the "👔 • Angel Staff" role or higher
+      const angelStaffRole = message.guild.roles.cache.find(
+        (role) => role.name === "👔 • Angel Staff",
       );
 
-      // Create a button based on the user's role
-      const button = new ButtonBuilder()
-        .setCustomId(isVerified ? "unverify_button" : "verify_button")
-        .setLabel(isVerified ? "Unverify" : "Verify")
-        .setStyle(isVerified ? ButtonStyle.Danger : ButtonStyle.Success);
+      if (!angelStaffRole) {
+        return message.reply({
+          content: "The '👔 • Angel Staff' role does not exist in this server.",
+          flags: "Ephemeral",
+        });
+      }
 
-      const row = new ActionRowBuilder().addComponents(button);
+      const memberRoles = message.member.roles.cache;
+      const hasPermission = memberRoles.some(
+        (role) => role.position >= angelStaffRole.position,
+      );
+
+      if (!hasPermission) {
+        return message.reply({
+          content: "You do not have permission to use this command.",
+          flags: "Ephemeral",
+        });
+      }
+
+      // Delete the user's command message
+      await message.delete().catch((error) => {
+        console.error("Failed to delete message:", error);
+      });
+
+      // Create a green "Verify" button
+      const verifyButton = new ButtonBuilder()
+        .setCustomId("verify_button")
+        .setLabel("Verify")
+        .setStyle(ButtonStyle.Success);
+
+      const row = new ActionRowBuilder().addComponents(verifyButton);
 
       // Send the button alone (no text)
       await message.channel.send({
@@ -300,75 +317,52 @@ client.on("messageCreate", async (message) => {
   }
 });
 
-// Handle the !ha command
-client.on("messageCreate", async (message) => {
-  if (message.content.startsWith("!ha")) {
-    // Check if the user has the "👔 • Angel Staff" role or any role above it
-    const angelStaffRole = message.guild.roles.cache.find(
-      (role) => role.name === "👔 • Angel Staff",
-    );
-
-    if (!angelStaffRole) {
-      return message.reply({
-        content: "The '👔 • Angel Staff' role does not exist in this server.",
-        flags: "Ephemeral",
-      });
-    }
-
-    // Check if the user has the "👔 • Angel Staff" role or a higher role
-    const memberRoles = message.member.roles.cache;
-    const hasPermission = memberRoles.some(
-      (role) => role.position >= angelStaffRole.position,
-    );
-
-    if (!hasPermission) {
-      return message.reply({
-        content: "You do not have permission to use this command.",
-        flags: "Ephemeral",
-      });
-    }
-
-    // Extract the text from the command
-    const text = message.content.slice("!ha".length).trim();
-    if (!text) {
-      return message.reply({
-        content: "Please provide a message to send.",
-        flags: "Ephemeral",
-      });
-    }
-
-    // Send the message as the bot
-    await message.channel.send(text);
-
-    // Delete the user's !ha command message
-    await message.delete().catch((error) => {
-      console.error("Failed to delete message:", error);
-    });
-  }
-});
-
 // Handle button clicks
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isButton()) return;
 
   if (interaction.customId === "verify_button") {
-    // Create a modal for the user to input their Minecraft name
-    const modal = new ModalBuilder()
-      .setCustomId("verify_modal")
-      .setTitle("Verify Minecraft Name");
+    // Check if the user has the "✅• Verified" role
+    const member = interaction.guild.members.cache.get(interaction.user.id);
+    if (!member) return;
 
-    const minecraftNameInput = new TextInputBuilder()
-      .setCustomId("minecraft_name")
-      .setLabel("Minecraft Name")
-      .setStyle(TextInputStyle.Short)
-      .setPlaceholder("Enter your Minecraft name")
-      .setRequired(true);
+    const isVerified = member.roles.cache.some(
+      (role) => role.name === "✅• Verified",
+    );
 
-    const actionRow = new ActionRowBuilder().addComponents(minecraftNameInput);
-    modal.addComponents(actionRow);
+    if (isVerified) {
+      // User is already verified, show ephemeral message with "Unverify" button
+      const unverifyButton = new ButtonBuilder()
+        .setCustomId("unverify_button")
+        .setLabel("Unverify")
+        .setStyle(ButtonStyle.Danger);
 
-    // Show the modal
-    await interaction.showModal(modal);
+      const row = new ActionRowBuilder().addComponents(unverifyButton);
+
+      await interaction.reply({
+        content: "You are already Verified, do you want to Unverify?",
+        components: [row],
+        ephemeral: true,
+      });
+    } else {
+      // User is not verified, show the verification modal
+      const modal = new ModalBuilder()
+        .setCustomId("verify_modal")
+        .setTitle("Verify Minecraft Name");
+
+      const minecraftNameInput = new TextInputBuilder()
+        .setCustomId("minecraft_name")
+        .setLabel("Minecraft Name")
+        .setStyle(TextInputStyle.Short)
+        .setPlaceholder("Enter your Minecraft name")
+        .setRequired(true);
+
+      const actionRow = new ActionRowBuilder().addComponents(minecraftNameInput);
+      modal.addComponents(actionRow);
+
+      // Show the modal
+      await interaction.showModal(modal);
+    }
   } else if (interaction.customId === "unverify_button") {
     // Handle unverify button click
     verifiedUsers.delete(interaction.user.id);
