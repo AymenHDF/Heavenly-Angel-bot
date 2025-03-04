@@ -266,9 +266,9 @@ client.once("ready", () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
-// Handle the !habutton command
+// Handle the !verifybutton command
 client.on("messageCreate", async (message) => {
-  if (message.content === "!habutton" && message.channel.name === "『✅』verify") {
+  if (message.content === "!verifybutton" && message.channel.name === "『✅』verify") {
     try {
       // Get the user's roles
       const member = message.guild.members.cache.get(message.author.id);
