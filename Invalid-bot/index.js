@@ -58,7 +58,6 @@ function loadStorage() {
     verifiedUsers = new Set();
     cooldowns = new Map();
     fs.writeFileSync(storagePath, JSON.stringify({ verifiedUsers: [], cooldowns: [] }, null, 2));
-    }
   }
 }
 
@@ -315,6 +314,53 @@ client.on("messageCreate", async (message) => {
     } catch (error) {
       console.error("Failed to send button:", error);
     }
+  }
+});
+
+// Handle the !ha command
+client.on("messageCreate", async (message) => {
+  if (message.content.startsWith("!ha")) {
+    // Check if the user has the "👔 • Angel Staff" role or any role above it
+    const angelStaffRole = message.guild.roles.cache.find(
+      (role) => role.name === "👔 • Angel Staff",
+    );
+
+    if (!angelStaffRole) {
+      return message.reply({
+        content: "The '👔 • Angel Staff' role does not exist in this server.",
+        flags: "Ephemeral",
+      });
+    }
+
+    // Check if the user has the "👔 • Angel Staff" role or a higher role
+    const memberRoles = message.member.roles.cache;
+    const hasPermission = memberRoles.some(
+      (role) => role.position >= angelStaffRole.position,
+    );
+
+    if (!hasPermission) {
+      return message.reply({
+        content: "You do not have permission to use this command.",
+        flags: "Ephemeral",
+      });
+    }
+
+    // Extract the text from the command
+    const text = message.content.slice("!ha".length).trim();
+    if (!text) {
+      return message.reply({
+        content: "Please provide a message to send.",
+        flags: "Ephemeral",
+      });
+    }
+
+    // Send the message as the bot
+    await message.channel.send(text);
+
+    // Delete the user's !ha command message
+    await message.delete().catch((error) => {
+      console.error("Failed to delete message:", error);
+    });
   }
 });
 
