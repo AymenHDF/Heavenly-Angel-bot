@@ -579,6 +579,19 @@ client.on("interactionCreate", async (interaction) => {
       }
     }
 
+    // Assign the "👼 • Angel" role if the guild is "Heavenly Spirits"
+    if (guildName === "Heavenly Spirits") {
+      const angelRole = interaction.guild.roles.cache.find(
+        (role) => role.name === "👼 • Angel",
+      );
+      if (angelRole) {
+        const member = interaction.guild.members.cache.get(interaction.user.id);
+        if (member) {
+          await member.roles.add(angelRole).catch(console.error);
+        }
+      }
+    }
+
     // Mark the user as verified
     verifiedUsers.add(interaction.user.id);
     saveStorage(); // Save changes to storage
