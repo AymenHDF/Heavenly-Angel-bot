@@ -270,19 +270,28 @@ client.once("ready", () => {
 client.on("messageCreate", async (message) => {
   if (message.content === "!habutton" && message.channel.name === "『✅』verify") {
     try {
-      // Create a button for verification or unverification
+      // Get the user's roles
+      const member = message.guild.members.cache.get(message.author.id);
+      if (!member) return;
+
+      // Check if the user has the "✅• Verified" or "❌• Unverified" role
+      const isVerified = member.roles.cache.some(
+        (role) => role.name === "✅• Verified",
+      );
+      const isUnverified = member.roles.cache.some(
+        (role) => role.name === "❌• Unverified",
+      );
+
+      // Create a button based on the user's role
       const button = new ButtonBuilder()
-        .setCustomId(verifiedUsers.has(message.author.id) ? "unverify_button" : "verify_button")
-        .setLabel(verifiedUsers.has(message.author.id) ? "Unverify" : "Verify")
-        .setStyle(verifiedUsers.has(message.author.id) ? ButtonStyle.Danger : ButtonStyle.Success);
+        .setCustomId(isVerified ? "unverify_button" : "verify_button")
+        .setLabel(isVerified ? "Unverify" : "Verify")
+        .setStyle(isVerified ? ButtonStyle.Danger : ButtonStyle.Success);
 
       const row = new ActionRowBuilder().addComponents(button);
 
-      // Send the button as a permanent message
+      // Send the button alone (no text)
       await message.channel.send({
-        content: verifiedUsers.has(message.author.id)
-          ? "You are verified. Click the button to unverify."
-          : "You are not verified. Click the button to verify.",
         components: [row],
       });
     } catch (error) {
