@@ -58,6 +58,7 @@ function loadStorage() {
     verifiedUsers = new Set();
     cooldowns = new Map();
     fs.writeFileSync(storagePath, JSON.stringify({ verifiedUsers: [], cooldowns: [] }, null, 2));
+    }
   }
 }
 
@@ -340,7 +341,7 @@ client.on("interactionCreate", async (interaction) => {
       const row = new ActionRowBuilder().addComponents(unverifyButton);
 
       await interaction.reply({
-        content: "You are already Verified, do you want to Unverify?",
+        content: "You are already verified, do you want to unverify?",
         components: [row],
         ephemeral: true,
       });
