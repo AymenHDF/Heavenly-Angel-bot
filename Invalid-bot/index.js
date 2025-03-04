@@ -438,6 +438,28 @@ client.on("interactionCreate", async (interaction) => {
       }
     }
 
+    // Remove the "🪽 • Angel Lord" role if they have it
+    const angelLordRole = interaction.guild.roles.cache.find(
+      (role) => role.name === "🪽 • Angel Lord",
+    );
+    if (angelLordRole) {
+      const member = interaction.guild.members.cache.get(interaction.user.id);
+      if (member) {
+        await member.roles.remove(angelLordRole).catch(console.error);
+      }
+    }
+
+    // Remove the "👼🪽 • Angel King" role if they have it
+    const angelKingRole = interaction.guild.roles.cache.find(
+      (role) => role.name === "👼🪽 • Angel King",
+    );
+    if (angelKingRole) {
+      const member = interaction.guild.members.cache.get(interaction.user.id);
+      if (member) {
+        await member.roles.remove(angelKingRole).catch(console.error);
+      }
+    }
+
     // Assign the "❌• Unverified" role
     const unverifiedRole = interaction.guild.roles.cache.find(
       (role) => role.name === "❌• Unverified",
@@ -543,19 +565,6 @@ client.on("interactionCreate", async (interaction) => {
       const member = interaction.guild.members.cache.get(interaction.user.id);
       if (member) {
         await member.roles.add(verifiedRole).catch(console.error);
-      }
-    }
-
-    // Assign the "👼 • Angel" role if the guild is "Heavenly Spirits"
-    if (guildName === "Heavenly Spirits") {
-      const angelRole = interaction.guild.roles.cache.find(
-        (role) => role.name === "👼 • Angel",
-      );
-      if (angelRole) {
-        const member = interaction.guild.members.cache.get(interaction.user.id);
-        if (member) {
-          await member.roles.add(angelRole).catch(console.error);
-        }
       }
     }
 
