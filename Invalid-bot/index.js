@@ -242,10 +242,10 @@ async function generateWelcomeImage(
   ctx.fillStyle = "#99bcf7"; // Rank and name color
   ctx.fillText(`[${rank.name}] ${minecraftName} Joined`, 30, 80);
 
-  // Draw the "Guild" text and guild name
+  // Draw the "Guild" text and guild name with tag
   ctx.fillStyle = "#99bcf7"; // Guild text and name color
   ctx.fillText("Guild:", 30, 120);
-  ctx.fillText(guild, 110, 120);
+  ctx.fillText(`${guild.name} [${guild.tag}]`, 110, 120); // Include guild tag
 
   // Draw the "Level" text and level value
   ctx.fillStyle = "#f4f000"; // Level text and value color
@@ -266,120 +266,28 @@ client.once("ready", () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
-// Handle the !verify command
+// Handle the !habutton command
 client.on("messageCreate", async (message) => {
-  if (
-    message.content === "!verify" &&
-    message.channel.name === "『✅』verify"
-  ) {
+  if (message.content === "!habutton" && message.channel.name === "『✅』verify") {
     try {
-      if (verifiedUsers.has(message.author.id)) {
-        // User is already verified, check cooldown
-        const cooldown = cooldowns.get(message.author.id);
-        const isAdmin = message.member.permissions.has(
-          PermissionsBitField.Flags.Administrator,
-        );
+      // Create a button for verification or unverification
+      const button = new ButtonBuilder()
+        .setCustomId(verifiedUsers.has(message.author.id) ? "unverify_button" : "verify_button")
+        .setLabel(verifiedUsers.has(message.author.id) ? "Unverify" : "Verify")
+        .setStyle(verifiedUsers.has(message.author.id) ? ButtonStyle.Danger : ButtonStyle.Success);
 
-        if (cooldown && Date.now() < cooldown && !isAdmin) {
-          const remainingTime = Math.ceil(
-            (cooldown - Date.now()) / 1000 / 60 / 60,
-          ); // Convert to hours
-          const reply = await message.reply({
-            content: `You are on cooldown. Please try again in ${remainingTime} hours.`,
-            flags: "Ephemeral",
-          });
+      const row = new ActionRowBuilder().addComponents(button);
 
-          setTimeout(() => reply.delete().catch(console.error), 30000); // Delete after 30 seconds
-          return;
-        }
-
-        // User is already verified, ask if they want to unverify
-        const unverifyButton = new ButtonBuilder()
-          .setCustomId("unverify_button")
-          .setLabel("Unverify")
-          .setStyle(ButtonStyle.Danger);
-
-        const row = new ActionRowBuilder().addComponents(unverifyButton);
-
-        const reply = await message.reply({
-          content: "You are already verified. Do you want to unverify?",
-          components: [row],
-          flags: "Ephemeral",
-        });
-
-        setTimeout(() => reply.delete().catch(console.error), 30000); // Delete after 30 seconds
-      } else {
-        // User is not verified, start the verification process
-        const verifyButton = new ButtonBuilder()
-          .setCustomId("verify_button")
-          .setLabel("Click to Verify")
-          .setStyle(ButtonStyle.Success);
-
-        const row = new ActionRowBuilder().addComponents(verifyButton);
-
-        const reply = await message.reply({
-          content: "Please verify your Minecraft name.",
-          components: [row],
-          flags: "Ephemeral",
-        });
-
-        setTimeout(() => reply.delete().catch(console.error), 30000); // Delete after 30 seconds
-      }
+      // Send the button as a permanent message
+      await message.channel.send({
+        content: verifiedUsers.has(message.author.id)
+          ? "You are verified. Click the button to unverify."
+          : "You are not verified. Click the button to verify.",
+        components: [row],
+      });
     } catch (error) {
-      console.error("Failed to send ephemeral message:", error);
+      console.error("Failed to send button:", error);
     }
-
-    // Delete the user's !verify message
-    await message.delete().catch((error) => {
-      console.error("Failed to delete message:", error);
-    });
-  }
-});
-
-// Handle the !ha command
-client.on("messageCreate", async (message) => {
-  if (message.content.startsWith("!ha")) {
-    // Check if the user has the "👔 • Angel Staff" role or any role above it
-    const angelStaffRole = message.guild.roles.cache.find(
-      (role) => role.name === "👔 • Angel Staff",
-    );
-
-    if (!angelStaffRole) {
-      return message.reply({
-        content: "The '👔 • Angel Staff' role does not exist in this server.",
-        flags: "Ephemeral",
-      });
-    }
-
-    // Check if the user has the "👔 • Angel Staff" role or a higher role
-    const memberRoles = message.member.roles.cache;
-    const hasPermission = memberRoles.some(
-      (role) => role.position >= angelStaffRole.position,
-    );
-
-    if (!hasPermission) {
-      return message.reply({
-        content: "You do not have permission to use this command.",
-        flags: "Ephemeral",
-      });
-    }
-
-    // Extract the text from the command
-    const text = message.content.slice("!ha".length).trim();
-    if (!text) {
-      return message.reply({
-        content: "Please provide a message to send.",
-        flags: "Ephemeral",
-      });
-    }
-
-    // Send the message as the bot
-    await message.channel.send(text);
-
-    // Delete the user's !ha command message
-    await message.delete().catch((error) => {
-      console.error("Failed to delete message:", error);
-    });
   }
 });
 
@@ -501,6 +409,7 @@ client.on("interactionCreate", async (interaction) => {
     // Fetch guild data
     const guildData = await getHypixelGuildData(uuid);
     const guildName = guildData?.name || "No Guild";
+    const guildTag = guildData?.tag || ""; // Get the guild tag from Hypixel API
 
     // Get player rank and color
     const rank = formatHypixelRank(playerData);
@@ -510,7 +419,7 @@ client.on("interactionCreate", async (interaction) => {
       minecraftName,
       rank,
       level,
-      guildName,
+      { name: guildName, tag: guildTag }, // Pass guild name and tag
       uuid,
       discordUsername,
     );
