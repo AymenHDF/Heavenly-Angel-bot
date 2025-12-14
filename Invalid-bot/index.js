@@ -10,6 +10,7 @@ import {
   TextInputStyle,
   PermissionsBitField,
   AttachmentBuilder,
+  EmbedBuilder,
 } from "discord.js";
 import axios from "axios";
 import { createCanvas, loadImage, registerFont } from "canvas";
@@ -261,6 +262,184 @@ async function generateWelcomeImage(
   return canvas.toBuffer();
 }
 
+// Function to generate 3D Minecraft skin with walking animation
+async function generate3DSkin(minecraftName, uuid) {
+  try {
+    // Create canvas for 3D rendering
+    const canvas = createCanvas(400, 600);
+    const ctx = canvas.getContext("2d");
+    
+    // Clear canvas with transparent background
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Load the skin texture
+    const skinUrl = `https://crafatar.com/skins/${uuid}`;
+    const skinTexture = await loadImage(skinUrl);
+    
+    // Draw background
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Define skin parts dimensions (based on Minecraft skin format)
+    const headWidth = 40;
+    const headHeight = 40;
+    const bodyWidth = 40;
+    const bodyHeight = 60;
+    const armWidth = 20;
+    const armHeight = 60;
+    const legWidth = 20;
+    const legHeight = 60;
+    
+    // Calculate positions for centering
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    
+    // Draw shadow
+    ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+    ctx.ellipse(centerX, centerY + 150, 80, 20, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Animation parameters
+    const walkCycle = Math.sin(Date.now() / 200) * 0.2;
+    
+    // Draw head
+    ctx.save();
+    ctx.translate(centerX, centerY - 100);
+    
+    // Head base layer
+    ctx.drawImage(
+      skinTexture,
+      8, 8, headWidth, headHeight,  // Source position on skin texture
+      -headWidth/2, -headHeight/2, headWidth, headHeight  // Destination on canvas
+    );
+    
+    // Head overlay (extra layer)
+    ctx.drawImage(
+      skinTexture,
+      40, 8, headWidth, headHeight,  // Source position on skin texture
+      -headWidth/2, -headHeight/2, headWidth, headHeight  // Destination on canvas
+    );
+    
+    ctx.restore();
+    
+    // Draw body
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    
+    // Body base layer
+    ctx.drawImage(
+      skinTexture,
+      20, 20, bodyWidth, bodyHeight,  // Source position on skin texture
+      -bodyWidth/2, -bodyHeight/2, bodyWidth, bodyHeight  // Destination on canvas
+    );
+    
+    // Body overlay (extra layer)
+    ctx.drawImage(
+      skinTexture,
+      20, 36, bodyWidth, bodyHeight,  // Source position on skin texture
+      -bodyWidth/2, -bodyHeight/2, bodyWidth, bodyHeight  // Destination on canvas
+    );
+    
+    ctx.restore();
+    
+    // Draw left arm with walking animation
+    ctx.save();
+    ctx.translate(centerX - 30, centerY);
+    ctx.rotate(-walkCycle);
+    
+    // Left arm base layer
+    ctx.drawImage(
+      skinTexture,
+      44, 20, armWidth, armHeight,  // Source position on skin texture
+      -armWidth/2, 0, armWidth, armHeight  // Destination on canvas
+    );
+    
+    // Left arm overlay (extra layer)
+    ctx.drawImage(
+      skinTexture,
+      44, 36, armWidth, armHeight,  // Source position on skin texture
+      -armWidth/2, 0, armWidth, armHeight  // Destination on canvas
+    );
+    
+    ctx.restore();
+    
+    // Draw right arm with walking animation
+    ctx.save();
+    ctx.translate(centerX + 30, centerY);
+    ctx.rotate(walkCycle);
+    
+    // Right arm base layer
+    ctx.drawImage(
+      skinTexture,
+      36, 52, armWidth, armHeight,  // Source position on skin texture (flipped horizontally)
+      -armWidth/2, 0, armWidth, armHeight  // Destination on canvas
+    );
+    
+    // Right arm overlay (extra layer)
+    ctx.drawImage(
+      skinTexture,
+      52, 52, armWidth, armHeight,  // Source position on skin texture (flipped horizontally)
+      -armWidth/2, 0, armWidth, armHeight  // Destination on canvas
+    );
+    
+    ctx.restore();
+    
+    // Draw left leg with walking animation
+    ctx.save();
+    ctx.translate(centerX - 10, centerY + 60);
+    ctx.rotate(walkCycle);
+    
+    // Left leg base layer
+    ctx.drawImage(
+      skinTexture,
+      4, 20, legWidth, legHeight,  // Source position on skin texture
+      -legWidth/2, 0, legWidth, legHeight  // Destination on canvas
+    );
+    
+    // Left leg overlay (extra layer)
+    ctx.drawImage(
+      skinTexture,
+      4, 36, legWidth, legHeight,  // Source position on skin texture
+      -legWidth/2, 0, legWidth, legHeight  // Destination on canvas
+    );
+    
+    ctx.restore();
+    
+    // Draw right leg with walking animation
+    ctx.save();
+    ctx.translate(centerX + 10, centerY + 60);
+    ctx.rotate(-walkCycle);
+    
+    // Right leg base layer
+    ctx.drawImage(
+      skinTexture,
+      20, 52, legWidth, legHeight,  // Source position on skin texture (flipped horizontally)
+      -legWidth/2, 0, legWidth, legHeight  // Destination on canvas
+    );
+    
+    // Right leg overlay (extra layer)
+    ctx.drawImage(
+      skinTexture,
+      4, 52, legWidth, legHeight,  // Source position on skin texture (flipped horizontally)
+      -legWidth/2, 0, legWidth, legHeight  // Destination on canvas
+    );
+    
+    ctx.restore();
+    
+    // Add player name at the bottom
+    ctx.font = "20px Minecraft";
+    ctx.fillStyle = "#FFFFFF";
+    ctx.textAlign = "center";
+    ctx.fillText(minecraftName, centerX, centerY + 180);
+    
+    // Return the image as a buffer
+    return canvas.toBuffer();
+  } catch (error) {
+    console.error("Error generating 3D skin:", error);
+    return null;
+  }
+}
+
 // Bot is ready
 client.once("ready", () => {
   console.log(`Logged in as ${client.user.tag}!`);
@@ -313,6 +492,90 @@ client.on("messageCreate", async (message) => {
       });
     } catch (error) {
       console.error("Failed to send button:", error);
+    }
+  }
+  
+  // Handle the !skin command for 3D Minecraft skin generation
+  if (message.content.startsWith("!skin")) {
+    const args = message.content.split(" ");
+    if (args.length < 2) {
+      const embed = new EmbedBuilder()
+        .setColor("#FF0000")
+        .setTitle("❌ Missing Username")
+        .setDescription("Please provide a Minecraft username. Usage: `!skin <username>`")
+        .setTimestamp();
+      
+      return message.reply({ embeds: [embed] });
+    }
+    
+    const minecraftName = args[1];
+    
+    try {
+      // Send a "loading" message
+      const loadingEmbed = new EmbedBuilder()
+        .setColor("#FFFF00")
+        .setTitle("⏳ Generating 3D Skin")
+        .setDescription(`Please wait while I generate the 3D skin for **${minecraftName}**...`)
+        .setTimestamp();
+      
+      const loadingMessage = await message.reply({ embeds: [loadingEmbed] });
+      
+      // Fetch UUID from Mojang API
+      const uuid = await getUUIDFromUsername(minecraftName);
+      if (!uuid) {
+        const errorEmbed = new EmbedBuilder()
+          .setColor("#FF0000")
+          .setTitle("❌ Invalid Username")
+          .setDescription(`Could not find a Minecraft player with the username **${minecraftName}**. Please check the spelling and try again.`)
+          .setTimestamp();
+        
+        return loadingMessage.edit({ embeds: [errorEmbed] });
+      }
+      
+      // Generate 3D skin
+      const skinBuffer = await generate3DSkin(minecraftName, uuid);
+      if (!skinBuffer) {
+        const errorEmbed = new EmbedBuilder()
+          .setColor("#FF0000")
+          .setTitle("❌ Skin Generation Failed")
+          .setDescription(`Failed to generate the 3D skin for **${minecraftName}**. Please try again later.`)
+          .setTimestamp();
+        
+        return loadingMessage.edit({ embeds: [errorEmbed] });
+      }
+      
+      // Create attachment
+      const attachment = new AttachmentBuilder(skinBuffer, { name: `${minecraftName}_3d.png` });
+      
+      // Create success embed
+      const successEmbed = new EmbedBuilder()
+        .setColor("#00FF00")
+        .setTitle("✅ 3D Skin Generated")
+        .setDescription(`Here's the 3D walking animation for **${minecraftName}** with the extra layer!`)
+        .setImage(`attachment://${minecraftName}_3d.png`)
+        .addFields(
+          { name: "Username", value: minecraftName, inline: true },
+          { name: "UUID", value: uuid, inline: true },
+          { name: "Features", value: "✅ Walking Animation\n✅ Extra Layer (Hat/Jacket/Sleeves/Pants)", inline: false }
+        )
+        .setFooter({ text: `Requested by ${message.author.tag}` })
+        .setTimestamp();
+      
+      // Edit the loading message with the result
+      await loadingMessage.edit({ 
+        embeds: [successEmbed], 
+        files: [attachment] 
+      });
+      
+    } catch (error) {
+      console.error("Error in !skin command:", error);
+      const errorEmbed = new EmbedBuilder()
+        .setColor("#FF0000")
+        .setTitle("❌ Unexpected Error")
+        .setDescription(`An unexpected error occurred while generating the 3D skin for **${minecraftName}**.`)
+        .setTimestamp();
+      
+      message.reply({ embeds: [errorEmbed] });
     }
   }
 });
